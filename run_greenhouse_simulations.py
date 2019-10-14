@@ -17,6 +17,8 @@ if SET_SEEDS:
 
 
 def figure_situation(height, width):
+    """Create situation for paper figure.
+    """
     mean = 0.50
     std = (random.random() * 0.2) + 0.1
     situation = np.zeros((height, width)) + mean + np.random.normal(0, std, (height, width))
@@ -27,6 +29,8 @@ def figure_situation(height, width):
 
 
 def create_situations(num, height, width, means=None, ambient_lux=None):
+    """Create a fixed set of situations which can be used for each system.
+    """
     means = [0.35, 0.5, 0.65] if means is None else means
     ambient_lux = [0.0, 500.0, 1000.0, 3000.0, 5000.0, 7000.0, 9000.0] if ambient_lux is None else ambient_lux
 
@@ -53,7 +57,7 @@ RUNS_PER_CONFIG = 1
 MAX_STEPS = 10
 POP_SIZE = 40
 PARENTS = 100
-CONTEXTS_PER_CONFIG = 10
+CONTEXTS_PER_CONFIG = 5000
 SHOW_ANIMATION = True
 SAVE_FOLDER = "gh-runs-{}-{}-{}-{}-{}".format(RUNS_PER_CONFIG, CONTEXTS_PER_CONFIG, MAX_STEPS, POP_SIZE, PARENTS)
 stats = {}
