@@ -1,6 +1,7 @@
 import os
 import pickle
 import random
+import sys
 
 import numpy as np
 
@@ -55,9 +56,11 @@ RUNS_PER_CONFIG = 1
 MAX_STEPS = 10
 POP_SIZE = 40
 PARENTS = 100
-CONTEXTS_PER_CONFIG = 1
+CONTEXTS_PER_CONFIG = int(sys.argv[2]) if len(sys.argv) > 2 else 5
 SHOW_ANIMATION = False
-SAVE_FOLDER = "gh-runs-{}-{}-{}-{}-{}".format(RUNS_PER_CONFIG, CONTEXTS_PER_CONFIG, MAX_STEPS, POP_SIZE, PARENTS)
+SAVE_PREFIX = sys.argv[1] if len(sys.argv) > 1 else "gh-run"
+print(SAVE_PREFIX, CONTEXTS_PER_CONFIG)
+SAVE_FOLDER = "{}-{}-{}-{}-{}-{}".format(SAVE_PREFIX, RUNS_PER_CONFIG, CONTEXTS_PER_CONFIG, MAX_STEPS, POP_SIZE, PARENTS)
 SAVE_IMAGES = False
 IMAGE_SAVE_FOLDER = SAVE_FOLDER if SAVE_IMAGES else None
 stats = {}
