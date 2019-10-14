@@ -25,14 +25,10 @@ def presence_scenario_a(w, h):
 
 width = 20
 height = 20
-
-
+DIM = width * height
 room = np.zeros((width,height))
-
 environment = np.zeros((width,height))
-
 bulbs = np.zeros((width,height))
-
 presence = presence_scenario_a(width, height)
 
 #----- Mape
@@ -42,8 +38,6 @@ def fitness(individual, data):
     print (data)
     print (individual)
     match = 0
-    #for selected, bulbs in zip(individual, data):
-        #if selected:
     for x in range(width):
         for y in range(height):
             if presence[x,y]>0 and individual[x,y]>0:
@@ -53,33 +47,15 @@ def fitness(individual, data):
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", list, fitness=creator.FitnessMax)
-
 toolbox = base.Toolbox()
- 
-toolbox.register(
-   "random_num",
-   random.choice,
-   [0,1]) 
-DIM = width * height
- 
-toolbox.register(
-    "individual",
-    tools.initRepeat,
-    creator.Individual,
-    toolbox.random_num,
-    n=DIM)
+toolbox.register("random_num", random.choice, [0,1])
+toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.random_num, n=DIM)
+print(toolbox.individual())
+toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-print (toolbox.individual())
-
-toolbox.register("population",
-                   tools.initRepeat,
-                   list,
-                   toolbox.individual)
 
 def evaluateInd(individual):
     match = 0
-    #for selected, bulbs in zip(individual, data):
-        #if selected:
     for y in range(height): # top left is (X=0,Y=0)
         for x in range(width):
             if individual[y*width+x]>0 and presence[x,y]>0:
@@ -87,16 +63,16 @@ def evaluateInd(individual):
     match_percentage = match / (width * height) 
     return (float(match_percentage),)
 
+
 def evaluateInd2(individual):
     match = 0
-    #for selected, bulbs in zip(individual, data):
-        #if selected:
     for y in range(height): # top left is (X=0,Y=0)
         for x in range(width):
-            if individual[y*width+x] == presence[x,y]:
+            if individual[y*width+x] == presence[x, y]:
                 match += 1
     match_percentage = match / (width * height) 
     return (float(match_percentage),)
+
 
 def myMutation(individual):
     for i in range(width):

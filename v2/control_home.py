@@ -28,25 +28,13 @@ class ControlHome(Home):
         self.scenario = Scenario()
         self.width_bound = [1, w-2]
         self.height_bound = [1, h-2]
-        #self.presence, self.bulbs = self.scenario.diagonal(self.width, self.height)
-        #self.presence, self.bulbs = self.scenario.corners(self.width, self.height)
         self.presence, self.bulbs = self.scenario.corners2(self.height, self.width)
 
         self.init_figures()
         self.steps = 0
         self.MAX_STEPS = 1
 
-#        self.fig = plt.figure(figsize=(1, 2))
-#
-#        self.fig.add_subplot(121)
-#        plt.imshow(self.presence, cmap='gray', interpolation='nearest', vmin=0, vmax=1)
-#
-#        self.fig.add_subplot(122)
-#        self.im = plt.imshow(self.luminosity, cmap='gray', interpolation='bilinear', animated=True, vmin=0, vmax=2)
-        # as a control system it just reacts to the situations
         self.react()
-
-
 
     def react(self):
         for y in range(self.height):
@@ -61,9 +49,6 @@ class ControlHome(Home):
 
     def updatefig(self, *args):
 
-        #self.presence = self.scenario.random(self.width, self.height)
-
-        #self.solve()
         print('------STEP-----',self.steps)
         self.steps += 1
         if self.steps > self.MAX_STEPS:
@@ -73,22 +58,7 @@ class ControlHome(Home):
             self.luminosity_im.set_data(self.luminosity_extrapolate(np.copy(self.luminosity)))
         plt.grid()
         plt.grid()
-        #im.set_cmap("gray")
-        #im.update()
-
-
         return self.im, self.luminosity_im
-
-#    def luminosity_extrapolate(self, luminosity):
-#        #there must some function doing this interpolation?
-#        for x in range(self.width_bound[0], self.width_bound[1]):
-#            for y in range(self.height_bound[0], self.height_bound[1]):
-#                if self.bulbs[x,y] > -1 and luminosity[x,y] > 0:
-#                    block = ((x-1, y-1), (x, y-1), (x+1,y-1), (x+1, y), (x+1, y+1), (x, y+1), (x-1, y+1), (x-1, y))
-#                    for point in block:
-#                        if point[0] in range(self.width_bound[0], self.width_bound[1]) and point[1] in range(self.height_bound[0], self.height_bound[1]):
-#                            luminosity[point[0],point[1]] += 0.15*luminosity[x,y]
-#        return luminosity
 
     def luminosity_extrapolate(self, luminosity):
         #there must some function doing this interpolation?
@@ -107,6 +77,5 @@ class ControlHome(Home):
 
     def run(self):
         self.ani = animation.FuncAnimation(self.fig, self.updatefig, interval=50, blit=True)
-        #self.updatefig()
         plt.show()
 

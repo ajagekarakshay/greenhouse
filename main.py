@@ -9,7 +9,7 @@ HEIGHT = 20
 
 for arg in sys.argv:
     if arg == 'control':
-        control_home = ControlHome(WIDTH,HEIGHT)
+        control_home = ControlHome(WIDTH, HEIGHT)
         control_home.run()
     elif arg == 'adaptive':
         adaptive_home = AdaptiveHome(WIDTH, HEIGHT) #simple self-adaptive home, uses strategies

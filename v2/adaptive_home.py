@@ -116,7 +116,6 @@ class AdaptiveHome(ControlHome):
                         score -= 1 #penalty for using a broken bulb
         return (float(score),)
 
-
     def presence_in_radius2 (self, radius, x, y, plan):
         block = ((y-1, x-1), (y, x-1), (y+1,x-1), (y+1, x), (y+1, x+1), (y, x+1), (y-1, x+1), (y-1, x)) # starts from left top
 
@@ -135,38 +134,13 @@ class AdaptiveHome(ControlHome):
     #-------------- Simulation stuff -------------
 
     def updatefig(self, *args):
-
-        #self.presence = self.scenario.random(self.width, self.height)
-
         #MAPE loop
-        self.monitor() # the MAPE full chain is called from monitor
-#        self.analyse()
-#        self.plan()
-#        self.execute()
-
+        self.monitor()  # the MAPE full chain is called from monitor
         return super().updatefig(*args)
 
-#        # visualizationn
-#        self.im.set_data(self.luminosity)
-#        self.luminosity_im.set_data(self.luminosity_extrapolate(self.luminosity))
-#        #im.set_cmap("gray")
-#        #im.update()
-#        #self.ani.event_source.stop()
-#        plt.grid()
-#        plt.grid()
-#
-#
-#        return self.im, self.luminosity_im
-
-        #im.set_cmap("gray")
-        #im.update()
-        #print("update called")
-        #return self.im,self.luminosity_im
 
 
     def run(self):
-        #self.ani = None
         self.ani = animation.FuncAnimation(self.fig, self.updatefig, interval=50, blit=True)
-        #self.updatefig()
         plt.show()
 
