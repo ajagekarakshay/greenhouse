@@ -8,8 +8,6 @@ import os
 
 import numpy as np
 import scipy.stats
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 from deap import base, creator, algorithms, benchmarks, tools
 
 import random
@@ -66,8 +64,6 @@ class CreativeGreenhouse:
 
         if self.show_ani:
             self.init_figures()
-        else:
-            self.init_figures2()
 
         # Initialize DEAP
         self.toolbox = base.Toolbox()
@@ -270,6 +266,8 @@ class CreativeGreenhouse:
     # ----------  Simulation ----------
     def run_animation(self):
         if self.show_ani:
+            import matplotlib.pyplot as plt
+            import matplotlib.animation as animation
             self.ani = animation.FuncAnimation(self.fig, self.updatefig, interval=50, blit=True)
             plt.show()
 
@@ -296,6 +294,7 @@ class CreativeGreenhouse:
         self.plans.append(plan)
 
         if img_save_path is not None:
+            import matplotlib.pyplot as plt
             self.init_figures2(title_prefix)
             self.fig.savefig(img_save_path)
             plt.close()
@@ -314,6 +313,7 @@ class CreativeGreenhouse:
                 situation = situations[n]
             self.new_context(situation)
             self.initialize_population()
+            img_path = None
             if img_save_folder is not None and (n == 0 or (n+1) % 10 == 0):
                 img_path = os.path.join(img_save_folder, "{}_{}.pdf".format(img_prefix, n+1))
             plan, fitness = self.run_single_context(img_path, title_prefix)
@@ -403,6 +403,7 @@ class CreativeGreenhouse:
         return image
 
     def init_figures(self):
+        import matplotlib.pyplot as plt
         self.fig, (ax1, ax2, ax3) = plt.subplots(figsize=(10, 3), ncols=3)
         self.create_plot(ax1, title='Plant heights', data=self.scenario.presence,
                          plot_cmap='gray', plot_interpolation='nearest',
@@ -416,6 +417,7 @@ class CreativeGreenhouse:
         plt.tight_layout()
 
     def init_figures2(self, title_prefix=None):
+        import matplotlib.pyplot as plt
         self.fig, (ax1, ax2) = plt.subplots(figsize=(7.5, 3), ncols=2)
 
         ax = ax1

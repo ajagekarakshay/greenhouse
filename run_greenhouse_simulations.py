@@ -3,8 +3,6 @@ import pickle
 import random
 
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 
 from greenhouse.creative_greenhouse import CreativeGreenhouse
 
@@ -60,6 +58,8 @@ PARENTS = 100
 CONTEXTS_PER_CONFIG = 1
 SHOW_ANIMATION = False
 SAVE_FOLDER = "gh-runs-{}-{}-{}-{}-{}".format(RUNS_PER_CONFIG, CONTEXTS_PER_CONFIG, MAX_STEPS, POP_SIZE, PARENTS)
+SAVE_IMAGES = False
+IMAGE_SAVE_FOLDER = SAVE_FOLDER if SAVE_IMAGES else None
 stats = {}
 
 if not os.path.exists(SAVE_FOLDER):
@@ -97,7 +97,7 @@ for config in awareness_configs:
         else:
             cur_stats = creative_home.run_multiple_contexts(num_contexts=CONTEXTS_PER_CONFIG,
                                                             situations=SITUATIONS + [FIG_SIT],
-                                                            img_save_folder=SAVE_FOLDER,
+                                                            img_save_folder=IMAGE_SAVE_FOLDER,
                                                             img_prefix="{}_r{}".format(name, r+1),
                                                             title_prefix=name)
 
@@ -152,93 +152,97 @@ print("{:*>100}".format(""))
 #######################  PLOTS PLOTS PLOTS  ##############################################
 ##########################################################################################
 
-# Create figure from FIG_SIT
-names = [a[0] for a in awareness_configs]
-tops = stats[names[0]]['tops'][0][-1]
+if SAVE_IMAGES:
+    import matplotlib.pyplot as plt
+    import matplotlib.gridspec as gridspec
 
-fig = plt.figure(figsize=(15.5, 3.0))
-gs1 = gridspec.GridSpec(1, 4)
-gs1.update(wspace=0.0, hspace=0.0)
+    # Create figure from FIG_SIT
+    names = [a[0] for a in awareness_configs]
+    tops = stats[names[0]]['tops'][0][-1]
 
-#fig, (ax1, ax2, ax3, ax4) = plt.subplots(figsize=(14.5, 3), ncols=4)
+    fig = plt.figure(figsize=(15.5, 3.0))
+    gs1 = gridspec.GridSpec(1, 4)
+    gs1.update(wspace=0.0, hspace=0.0)
 
-ax = plt.subplot(gs1[0])
-title = 'Plant heights'
-ax.set_title(title, y=1.00, fontsize=14)
-ax.axis('off')
-ax.set_xticks([])
-ax.set_yticks([])
-bbox = ax.get_position()
-print(bbox)
-image = ax.imshow(tops, cmap='gray', interpolation='nearest', vmin=0.0, vmax=1.0, animated=False)
-cbaxes = fig.add_axes([0.124, 0.11, 0.01, 0.77])
-#cbaxes.set_xticks([])
-cbar = plt.colorbar(image, cax=cbaxes)
-cbar.ax.yaxis.set_ticks_position('left')
+    #fig, (ax1, ax2, ax3, ax4) = plt.subplots(figsize=(14.5, 3), ncols=4)
 
-idx = 2
-ax = plt.subplot(gs1[1])
-name = names[idx]
-title = '{}: Lux & Lamps ON'.format(name)
-ax.set_title(title, y=1.00, fontsize=14)
-ax.axis('off')
-ax.set_xticks([])
-ax.set_yticks([])
-lux = stats[name]['lux'][0][-1]
-lux_img = ax.imshow(lux, cmap='inferno', interpolation='nearest', vmin=0.0, vmax=15000.0, animated=False)
-#fig.colorbar(lux_img, ax=ax)
+    ax = plt.subplot(gs1[0])
+    title = 'Plant heights'
+    ax.set_title(title, y=1.00, fontsize=14)
+    ax.axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
+    bbox = ax.get_position()
+    print(bbox)
+    image = ax.imshow(tops, cmap='gray', interpolation='nearest', vmin=0.0, vmax=1.0, animated=False)
+    cbaxes = fig.add_axes([0.124, 0.11, 0.01, 0.77])
+    #cbaxes.set_xticks([])
+    cbar = plt.colorbar(image, cax=cbaxes)
+    cbar.ax.yaxis.set_ticks_position('left')
 
-bulbs_on = stats[name]['plan'][0][-1]
-print("{} {}".format(name, np.count_nonzero(bulbs_on)))
-for i in range(HEIGHT):
-    for j in range(WIDTH):
-        if bulbs_on[i, j] > 0:
-            text = ax.text(j, i, "+", ha="center", va="center", color="black", fontsize=12)
+    idx = 2
+    ax = plt.subplot(gs1[1])
+    name = names[idx]
+    title = '{}: Lux & Lamps ON'.format(name)
+    ax.set_title(title, y=1.00, fontsize=14)
+    ax.axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
+    lux = stats[name]['lux'][0][-1]
+    lux_img = ax.imshow(lux, cmap='inferno', interpolation='nearest', vmin=0.0, vmax=15000.0, animated=False)
+    #fig.colorbar(lux_img, ax=ax)
 
-idx = 1
-ax = plt.subplot(gs1[2])
-name = names[idx]
-title = '{}: Lux & Lamps ON'.format(name)
-ax.set_title(title, y=1.00, fontsize=14)
-ax.axis('off')
-ax.set_xticks([])
-ax.set_yticks([])
-lux = stats[name]['lux'][0][-1]
-lux_img = ax.imshow(lux, cmap='inferno', interpolation='nearest', vmin=0.0, vmax=15000.0, animated=False)
-#fig.colorbar(lux_img, ax=ax)
+    bulbs_on = stats[name]['plan'][0][-1]
+    print("{} {}".format(name, np.count_nonzero(bulbs_on)))
+    for i in range(HEIGHT):
+        for j in range(WIDTH):
+            if bulbs_on[i, j] > 0:
+                text = ax.text(j, i, "+", ha="center", va="center", color="black", fontsize=12)
 
-bulbs_on = stats[name]['plan'][0][-1]
-print("{} {}".format(name, np.count_nonzero(bulbs_on)))
-for i in range(HEIGHT):
-    for j in range(WIDTH):
-        if bulbs_on[i, j] > 0:
-            text = ax.text(j, i, "+", ha="center", va="center", color="black", fontsize=12)
+    idx = 1
+    ax = plt.subplot(gs1[2])
+    name = names[idx]
+    title = '{}: Lux & Lamps ON'.format(name)
+    ax.set_title(title, y=1.00, fontsize=14)
+    ax.axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
+    lux = stats[name]['lux'][0][-1]
+    lux_img = ax.imshow(lux, cmap='inferno', interpolation='nearest', vmin=0.0, vmax=15000.0, animated=False)
+    #fig.colorbar(lux_img, ax=ax)
 
-idx = 0
-ax = plt.subplot(gs1[3])
-name = names[idx]
-title = '{}: Lux & Lamps ON'.format(name)
-ax.set_title(title, y=1.00, fontsize=14)
-ax.axis('off')
-ax.set_xticks([])
-ax.set_yticks([])
-bbox = ax.get_position()
-print(bbox)
-lux = stats[name]['lux'][0][-1]
-lux_img = ax.imshow(lux, cmap='inferno', interpolation='nearest', vmin=0.0, vmax=15000.0, animated=False)
-cbaxes = fig.add_axes([0.90, 0.11, 0.01, 0.77])
-#cbaxes.set_xticks([])
-plt.colorbar(lux_img, cax=cbaxes, extend='max')
+    bulbs_on = stats[name]['plan'][0][-1]
+    print("{} {}".format(name, np.count_nonzero(bulbs_on)))
+    for i in range(HEIGHT):
+        for j in range(WIDTH):
+            if bulbs_on[i, j] > 0:
+                text = ax.text(j, i, "+", ha="center", va="center", color="black", fontsize=12)
 
-bulbs_on = stats[name]['plan'][0][-1]
-print("{} {}".format(name, np.count_nonzero(bulbs_on)))
-for i in range(HEIGHT):
-    for j in range(WIDTH):
-        if bulbs_on[i, j] > 0:
-            text = ax.text(j, i, "+", ha="center", va="center", color="black", fontsize=12)
+    idx = 0
+    ax = plt.subplot(gs1[3])
+    name = names[idx]
+    title = '{}: Lux & Lamps ON'.format(name)
+    ax.set_title(title, y=1.00, fontsize=14)
+    ax.axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
+    bbox = ax.get_position()
+    print(bbox)
+    lux = stats[name]['lux'][0][-1]
+    lux_img = ax.imshow(lux, cmap='inferno', interpolation='nearest', vmin=0.0, vmax=15000.0, animated=False)
+    cbaxes = fig.add_axes([0.90, 0.11, 0.01, 0.77])
+    #cbaxes.set_xticks([])
+    plt.colorbar(lux_img, cax=cbaxes, extend='max')
 
-#plt.tight_layout()
-plt.savefig(os.path.join(SAVE_FOLDER, "paper_figure.pdf"))
+    bulbs_on = stats[name]['plan'][0][-1]
+    print("{} {}".format(name, np.count_nonzero(bulbs_on)))
+    for i in range(HEIGHT):
+        for j in range(WIDTH):
+            if bulbs_on[i, j] > 0:
+                text = ax.text(j, i, "+", ha="center", va="center", color="black", fontsize=12)
+
+    #plt.tight_layout()
+    plt.savefig(os.path.join(SAVE_FOLDER, "paper_figure.pdf"))
 
 
 
