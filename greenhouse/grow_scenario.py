@@ -8,7 +8,8 @@ class GrowScenario:
 
     tops: height of the top of the plant (0, n]
     bulbs: turned on 1, off 0, broken -1
-    bulbs_height: height of the bulbs (should be higher than presence in any given square), defaults to 1.
+    bulbs_height: height of the bulbs (should be higher than presence in any given square), defaults to 2.
+    ambient_lux: Level of ambient light in the greenhouse (same for all patches)
 
     """
 
@@ -49,7 +50,9 @@ class GrowScenario:
         self.tops = min_height + np.random.random((self.height, self.width)) * max_top
 
     def reinitialize(self, tops=None, ambient_lux=None, std=None, mean=None):
-        """Reinitialize plant heights and ambient lux.
+        """Reinitialize plant heights and ambient lux using std and mean for plant heights.
+
+        If parameters are not given, they are randomly drawn from a set of options.
         """
         if tops is None:
             means = [0.35, 0.5, 0.65]
@@ -87,7 +90,7 @@ class GrowScenario:
         return self.bulb_watts * np.count_nonzero(bulbs)
 
     def compute_lux(self, tops=None, bulbs=None, bulbs_height=None):
-        """Compute how much "lux" top of the plant in each square in the scenario gets.
+        """Compute how much "lux" top of the plant in each patch in the greenhouse gets.
         """
         if tops is None:
             tops = self.tops

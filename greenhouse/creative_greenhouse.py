@@ -1,18 +1,7 @@
+"""Creatively self-adapting greenhouse light control system.
 
-# Scenarios:
-#   use windows, use doors
-#   failed bulb- use others
-#   intensity vs cost- turn few bulb on with higher intensity instead of turning all on- saving cost by using one high intensity bulb
-
-# MAPE will have a GA with f.f Cost, Keep it lit for occupants
-#      GA: mutations turn ON, Turn off
-#           ON= costs 10 units per step, OFF= zero units
-
-# Awareness
-#   Goal: Add to f.f. reduce polution, some bulb type create more polution than others
-#   Context: roof and wall window control system awareness, linked to resource awareness
-#       Resoruce: Amount and location of Wall and roof top windows
-#
+See 'run_greenhouse_simulations' for usage.
+"""
 import logging
 import pickle
 import os
@@ -25,7 +14,7 @@ from deap import base, creator, algorithms, benchmarks, tools
 
 import random
 from greenhouse.grow_scenario import GrowScenario
-from greenhouse.plan import Plan, AppliedContext, PredesignedPlan
+from greenhouse.plan import Plan
 import time
 
 

@@ -4,7 +4,8 @@ import numpy as np
 
 
 class AppliedContext:
-
+    """Single application context for a plan.
+    """
     def __init__(self, tops, bulbs_height, fitness, ambient_lux):
         self.tops = tops
         self.bulbs_height = bulbs_height
@@ -15,7 +16,8 @@ class AppliedContext:
 
 
 class Plan:
-
+    """Single plan (turned on bulbs) and its application contexts.
+    """
     def __init__(self, bulbs_on, cost=0, applied_contexts=None):
         self.bulbs_on = bulbs_on
         self.cost = cost
@@ -39,17 +41,6 @@ class Plan:
                     contexts.append(ctx)
 
         return contexts
-
-
-class PredesignedPlan(Plan):
-
-    def __init__(self, width, height, bulbs_freq, bulb_watts):
-        self.bulbs_on = np.zeros((width, height))
-        self.cost = 0
-        self.applied_contexts = []
-
-        if bulbs_freq > 0:
-            self.bulbs_on[::bulbs_freq, ::bulbs_freq] = 1
 
 
 
