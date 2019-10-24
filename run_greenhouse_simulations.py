@@ -2,13 +2,14 @@ import os
 import pickle
 import random
 import sys
+import time
 
 import numpy as np
 
 from greenhouse.creative_greenhouse import CreativeGreenhouse
 
 
-SET_SEEDS = True
+SET_SEEDS = False
 
 if SET_SEEDS:
     random.seed(0)
@@ -37,7 +38,8 @@ def create_situations(num, height, width, means=None, ambient_lux=None):
     for n in range(num):
         s = {}
         std = (random.random() * 0.2) + 0.1
-        mean = random.choice(means)
+        #mean = random.choice(means)
+        mean = 0.3 + (random.random() * 0.4)
         ambient = random.choice(ambient_lux)
         situation = np.zeros((height, width)) + mean + np.random.normal(0, std, (height, width))
         situation[situation < 0] = 0.0
@@ -59,11 +61,11 @@ PARENTS = 100
 CONTEXTS_PER_CONFIG = int(sys.argv[2]) if len(sys.argv) > 2 else 5
 SHOW_ANIMATION = False
 SAVE_PREFIX = sys.argv[1] if len(sys.argv) > 1 else "gh-run"
-print(SAVE_PREFIX, CONTEXTS_PER_CONFIG)
 SAVE_FOLDER = "{}-{}-{}-{}-{}-{}".format(SAVE_PREFIX, RUNS_PER_CONFIG, CONTEXTS_PER_CONFIG, MAX_STEPS, POP_SIZE, PARENTS)
-SAVE_IMAGES = False
+SAVE_IMAGES = True
 IMAGE_SAVE_FOLDER = SAVE_FOLDER if SAVE_IMAGES else None
 stats = {}
+TARGET_LUX = 10000
 
 if not os.path.exists(SAVE_FOLDER):
     os.makedirs(SAVE_FOLDER)
@@ -71,13 +73,14 @@ if not os.path.exists(SAVE_FOLDER):
 # each config is 2-tuple: (name, used awarenesses), where used awarenesses is 4-tuple of booleans in order:
 # goal, resource, context and time
 awareness_configs = [
-    ('S3', [True, True, True, True]),
-    ('S2', [True, False, True, True]),
     ('S1', [True, False, False, True]),
+    ('S2', [True, False, True, True]),
+    ('S3', [True, True, True, True]),
 ]
 
 FIG_SIT = figure_situation(HEIGHT, WIDTH)
 SITUATIONS = create_situations(CONTEXTS_PER_CONFIG, HEIGHT, WIDTH)
+T1 = time.monotonic()
 
 # Run each config
 for config in awareness_configs:
@@ -85,12 +88,12 @@ for config in awareness_configs:
     all_pickle_file = os.path.join(SAVE_FOLDER, "stats_{}_all.pkl".format(name))
     awarenesses = config[1]
     stats[name] = {'fitness': [], 'time': [], 'luxavg': [], 'luxstd': [], 'luxmin': [], 'luxmax': [], 'bulbs': [],
-                   'sceavg': [], 'scestd': [], 'luxamb': [], 'tops': [], 'plan': [], 'lux':[]}
+                   'sceavg': [], 'scestd': [], 'luxamb': [], 'tops': [], 'plan': [], 'lux': [], 'cplans': []}
 
     for r in range(RUNS_PER_CONFIG):
         print("RUN {}/{} FOR CONFIG '{}':".format(r+1, RUNS_PER_CONFIG, name))
         pickle_file = os.path.join(SAVE_FOLDER, "stats_{}_{}.pkl".format(name, r))
-        creative_home = CreativeGreenhouse(WIDTH, HEIGHT, awarenesses, pickle_file=pickle_file,
+        creative_home = CreativeGreenhouse(WIDTH, HEIGHT, awarenesses, TARGET_LUX, pickle_file=pickle_file,
                                            show_ani=SHOW_ANIMATION, deap_config={'max_steps': MAX_STEPS,
                                                                                  'pop_size': POP_SIZE,
                                                                                  'parents': PARENTS})
@@ -141,12 +144,12 @@ for name, values in stats.items():
 
 print("{:*>100}".format(""))
 for name, values in stats.items():
-    print("Last tenth statistics for '{}':".format(name))
-    last_tenth = int(CONTEXTS_PER_CONFIG / 10)
+    print("Last half statistics for '{}':".format(name))
+    last_tenth = int(CONTEXTS_PER_CONFIG / 2)
     for k, v in values.items():
         if len(v) > 0 and k not in ['tops', 'plan', 'lux']:
             tenth = v[0][-last_tenth:]
-            print("{:10s} AVG {:9.3f} | STD {:9.3f} | MIN {:9.3f} | MAX {:9.3f}".format("{}/10".format(k), np.mean(tenth), np.std(tenth), np.min(tenth), np.max(tenth)))
+            print("{:10s} AVG {:9.3f} | STD {:9.3f} | MIN {:9.3f} | MAX {:9.3f}".format("{}/2".format(k), np.mean(tenth), np.std(tenth), np.min(tenth), np.max(tenth)))
     print()
 
 print("{:*>100}".format(""))
@@ -155,7 +158,7 @@ print("{:*>100}".format(""))
 #######################  PLOTS PLOTS PLOTS  ##############################################
 ##########################################################################################
 
-if SAVE_IMAGES:
+if True:
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
 
@@ -176,14 +179,13 @@ if SAVE_IMAGES:
     ax.set_xticks([])
     ax.set_yticks([])
     bbox = ax.get_position()
-    print(bbox)
+    #print(bbox)
     image = ax.imshow(tops, cmap='gray', interpolation='nearest', vmin=0.0, vmax=1.0, animated=False)
     cbaxes = fig.add_axes([0.124, 0.11, 0.01, 0.77])
-    #cbaxes.set_xticks([])
     cbar = plt.colorbar(image, cax=cbaxes)
     cbar.ax.yaxis.set_ticks_position('left')
 
-    idx = 2
+    idx = 0
     ax = plt.subplot(gs1[1])
     name = names[idx]
     title = '{}: Lux & Lamps ON'.format(name)
@@ -191,12 +193,11 @@ if SAVE_IMAGES:
     ax.axis('off')
     ax.set_xticks([])
     ax.set_yticks([])
-    lux = stats[name]['lux'][0][-1]
-    lux_img = ax.imshow(lux, cmap='inferno', interpolation='nearest', vmin=0.0, vmax=15000.0, animated=False)
-    #fig.colorbar(lux_img, ax=ax)
+    lux = stats[name]['lux'][0][-1] - TARGET_LUX
+    lux_img = ax.imshow(lux, cmap=plt.get_cmap('PiYG'), interpolation='nearest', vmin=-10000.0, vmax=10000.0, animated=False)
 
     bulbs_on = stats[name]['plan'][0][-1]
-    print("{} {}".format(name, np.count_nonzero(bulbs_on)))
+    #print("{} {}".format(name, np.count_nonzero(bulbs_on)))
     for i in range(HEIGHT):
         for j in range(WIDTH):
             if bulbs_on[i, j] > 0:
@@ -210,18 +211,17 @@ if SAVE_IMAGES:
     ax.axis('off')
     ax.set_xticks([])
     ax.set_yticks([])
-    lux = stats[name]['lux'][0][-1]
-    lux_img = ax.imshow(lux, cmap='inferno', interpolation='nearest', vmin=0.0, vmax=15000.0, animated=False)
-    #fig.colorbar(lux_img, ax=ax)
+    lux = stats[name]['lux'][0][-1] - TARGET_LUX
+    lux_img = ax.imshow(lux, cmap=plt.get_cmap('PiYG'), interpolation='nearest', vmin=-10000.0, vmax=10000.0, animated=False)
 
     bulbs_on = stats[name]['plan'][0][-1]
-    print("{} {}".format(name, np.count_nonzero(bulbs_on)))
+    #print("{} {}".format(name, np.count_nonzero(bulbs_on)))
     for i in range(HEIGHT):
         for j in range(WIDTH):
             if bulbs_on[i, j] > 0:
                 text = ax.text(j, i, "+", ha="center", va="center", color="black", fontsize=12)
 
-    idx = 0
+    idx = 2
     ax = plt.subplot(gs1[3])
     name = names[idx]
     title = '{}: Lux & Lamps ON'.format(name)
@@ -230,25 +230,19 @@ if SAVE_IMAGES:
     ax.set_xticks([])
     ax.set_yticks([])
     bbox = ax.get_position()
-    print(bbox)
-    lux = stats[name]['lux'][0][-1]
-    lux_img = ax.imshow(lux, cmap='inferno', interpolation='nearest', vmin=0.0, vmax=15000.0, animated=False)
+    #print(bbox)
+    lux = stats[name]['lux'][0][-1] - TARGET_LUX
+    lux_img = ax.imshow(lux, cmap=plt.get_cmap('PiYG'), interpolation='nearest', vmin=-10000.0, vmax=10000.0, animated=False)
     cbaxes = fig.add_axes([0.90, 0.11, 0.01, 0.77])
-    #cbaxes.set_xticks([])
-    plt.colorbar(lux_img, cax=cbaxes, extend='max')
+    plt.colorbar(lux_img, cax=cbaxes, extend='both')
 
     bulbs_on = stats[name]['plan'][0][-1]
-    print("{} {}".format(name, np.count_nonzero(bulbs_on)))
+    #print("{} {}".format(name, np.count_nonzero(bulbs_on)))
     for i in range(HEIGHT):
         for j in range(WIDTH):
             if bulbs_on[i, j] > 0:
                 text = ax.text(j, i, "+", ha="center", va="center", color="black", fontsize=12)
 
-    #plt.tight_layout()
     plt.savefig(os.path.join(SAVE_FOLDER, "paper_figure.pdf"))
 
-
-
-
-
-
+print("Whole run {:.2f} seconds.".format(time.monotonic() - T1))

@@ -18,7 +18,7 @@ import time
 
 class CreativeGreenhouse:
 
-    def __init__(self, width, height, awarenesses=[True, True, True, True], pickle_file='stats.pkl',
+    def __init__(self, width, height, awarenesses=[True, True, True, True], target_lux=10000, pickle_file='stats.pkl',
                  show_ani=True, deap_config={}):
         self.width = width
         self.height = height
@@ -26,7 +26,7 @@ class CreativeGreenhouse:
         self.scenario.reinitialize()
         self.bulbs_on = np.zeros((self.height, self.width))
 
-        self.TARGET_LUX = 10000
+        self.TARGET_LUX = target_lux
         self.LUX_FACTOR = scipy.stats.norm.pdf(1, 1, 0.2)
         self.PLANT_HEIGHT_ESTIMATE = 0.50
         self.plant_tops_estimate = np.zeros((self.height, self.width)) + self.PLANT_HEIGHT_ESTIMATE
@@ -56,10 +56,12 @@ class CreativeGreenhouse:
         }
 
         self.BULB_COST_FACTOR = 0.4
+        if self.resource_aware:
+            self.TARGET_LUX = 10000 + (self.width * self.height * self.BULB_COST_FACTOR)
 
         self.show_ani = show_ani
         self.stats = {'fitness': [], 'time': [], 'luxavg': [], 'luxstd': [], 'luxmin': [], 'luxmax': [], 'bulbs': [],
-                      'sceavg': [], 'scestd': [], 'luxamb': [], 'tops': [], 'plan': [], 'lux': []}
+                      'sceavg': [], 'scestd': [], 'luxamb': [], 'tops': [], 'plan': [], 'lux': [], 'cplans': []}
         self.pickle_file = pickle_file
 
         if self.show_ani:
@@ -159,7 +161,6 @@ class CreativeGreenhouse:
         y = np.random.randint(0, self.height, (self.width,))
         # Flip the bits on mutate
         bulbs_on[y, x] = 1 - bulbs_on[y, x]
-        #bulbs_on[y, x] = np.random.randint(0, 2, (self.width,))
         self.update_individual(individual, bulbs_on)
         return individual,
 
@@ -169,7 +170,6 @@ class CreativeGreenhouse:
         """Main fitness function to compute fitness of a DEAP individual.
         """
         bulbs = self.decode(individual)
-        #return float(self.fitness(bulbs, tops=tops)), self.evaluate_cost(bulbs)
         return float(self.fitness(bulbs, tops=tops)),
 
     def fitness(self, plan, tops=None):
@@ -182,12 +182,6 @@ class CreativeGreenhouse:
                         fitness += goal['evaluate'](plan, tops=tops)
                     else:
                         fitness -= goal['evaluate'](plan, tops=tops)
-
-        #if self.resource_aware:
-        #    fitness += self.evaluate_resource(plan)
-
-        #if self.domain_aware and self.context_aware:
-        #    fitness += self.evaluate_domain_context(plan)
 
         return fitness
 
@@ -224,40 +218,50 @@ class CreativeGreenhouse:
         if not use_old_plans:
             self.pop = self.toolbox.population(n=self.POP_SIZE)
         else:
-            new_inds = int(max(self.POP_SIZE / 2, self.POP_SIZE - len(self.plans)))
-            logging.debug("Creating {} new individuals".format(new_inds))
-            if new_inds > 0:
-                self.pop = self.toolbox.population(n=new_inds)
-            else:
-                self.pop = []
-
-            logging.debug("Adding {} old plans to population".format(self.POP_SIZE - new_inds))
+            self.pop = []
             if use_closest_plans:
-                old_plans = self.get_closest_tops_plans(self.scenario.presence, self.POP_SIZE - new_inds)
+                old_plans = self.get_closest_tops_plans(self.scenario.presence, int(self.POP_SIZE / 2))
             else:
                 old_plans = random.sample(self.plans, min(len(self.plans), int(self.POP_SIZE / 2)))
             for p in old_plans:
+                logging.debug("Adding {} old plans to population".format(len(old_plans)))
                 individual = self.toolbox.individual(p.bulbs_on)
                 self.pop.append(individual)
+
+            new_inds = self.POP_SIZE - len(self.pop)
+            logging.debug("Creating {} new individuals".format(new_inds))
+            self.pop += self.toolbox.population(n=new_inds)
 
     def get_closest_tops_plans(self, tops, number_of_plans=1):
         t1 = time.monotonic()
         if len(self.plans) < number_of_plans:
+            self.stats['cplans'].append(len(self.plans))
             return self.plans
 
         plans = []
+        tops_std = np.std(tops)
+        tops_mean = np.mean(tops)
         for p in self.plans:
             min_dist = np.iinfo(np.int64).max
             for ctx in p.applied_contexts:
                 if abs(ctx.ambient_lux - self.scenario.ambient_lux) < 1500:
-                    eucl_dist = np.linalg.norm(tops - ctx.tops)
-                    if eucl_dist < min_dist:
-                        min_dist = eucl_dist
-            plans.append((min_dist, p))
+                    if self.context_aware:
+                        if abs(ctx.tops_mean - tops_mean) < 0.2 and abs(ctx.tops_std - tops_std) < 0.1:
+                            eucl_dist = np.linalg.norm(tops - ctx.tops)
+                            if eucl_dist < min_dist:
+                                min_dist = eucl_dist
+                    else:
+                        eucl_dist = np.linalg.norm(tops - ctx.tops)
+                        if eucl_dist < min_dist:
+                            min_dist = eucl_dist
+            if min_dist < np.iinfo(np.int64).max:
+                plans.append((min_dist, p))
 
         plans = sorted(plans, key=lambda x: x[0])
+        self.stats['cplans'].append(len(plans))
+        #print("Considered plans: {}".format(len(plans)))
         logging.debug(plans)
-        logging.debug("Closest tops plans found in {:.4f} seconds.".format(time.monotonic() - t1))
+        logging.info("Closest tops plans found in {:.4f} seconds.".format(time.monotonic() - t1))
         return [p[1] for p in plans[:number_of_plans]]
 
     def get_best_plans(self, tops, ambient_lux, number_of_plans=1):
@@ -340,9 +344,9 @@ class CreativeGreenhouse:
             self.stats['plan'].append(np.copy(self.bulbs_on))
             self.stats['lux'].append(lux)
 
-            print('CTX {:5d} ({:4.0f} {:.2f} {:.3f})| FIT {:7.3f} (AVG {:7.3f}) | LUX AVG {:9.3f} STD {:8.3f} MIN {:9.3f} MAX {:9.3f} | #BULBS {:3d} (AVG {:7.3f}) | PLANS {:5d} ({:6.3f}s)'
+            print('CTX {:5d} ({:4.0f} {:.2f} {:.3f})| FIT {:7.3f} (AVG {:7.3f}) | LUX AVG {:9.3f} STD {:8.3f} MIN {:9.3f} MAX {:9.3f} | #BULBS {:3d} (AVG {:7.3f}) | PLANS {:5d} AVG {:7.3f} ] {:6.3f}s'
                   .format(n+1, self.scenario.ambient_lux, self.scenario.mean, self.scenario.std, fitness, np.mean(self.stats['fitness']), luxavg, luxstd, luxmin, luxmax, num_bulbs,
-                          np.mean(self.stats['bulbs']), len(self.plans), t2 - t1))
+                          np.mean(self.stats['bulbs']), self.stats['cplans'][-1], np.mean(self.stats['cplans']), t2 - t1))
 
         with open(self.pickle_file, 'wb') as f:
             pickle.dump(self.stats, f)
